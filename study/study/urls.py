@@ -16,6 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+# from django.conf.urls import handler400, handler404, handler500
+
+# handler404 = 'myapp.views.page_not_found_page'
 
 urlpatterns = [
     path('admin/', admin.site.urls),
