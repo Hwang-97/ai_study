@@ -41,3 +41,6 @@ def add_stock(request):
         return JsonResponse(
             {"message": "Stock added successfully", "stock_id": stock.id}
         )
+    
+def chat_page(request):
+    return render(request, 'chat.html')

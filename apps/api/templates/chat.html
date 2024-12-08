@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 채팅</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .chat-container {
+            width: 400px;
+            height: 500px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        #chat-box {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            border-bottom: 1px solid #ddd;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 10px;
+            max-width: 75%;
+        }
+        .user {
+            background-color: #aee5f1;
+            margin-left: auto;
+        }
+        .ai {
+            background-color: #e0f7e9;
+        }
+        .loading {
+            text-align: center;
+            font-style: italic;
+            color: gray;
+        }
+        .input-container {
+            display: flex;
+            padding: 10px;
+            background-color: #f1f1f1;
+            border-top: 1px solid #ddd;
+        }
+        #question {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin-right: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #007A96;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div id="chat-box"></div>
+        <div class="input-container">
+            <input type="text" id="question" placeholder="질문을 입력하세요" />
+            <button onclick="sendMessage()">질문하기</button>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('question').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        async function sendMessage() {
+            const question = document.getElementById('question').value;
+            if (!question) return;
+
+            // 사용자 메시지 화면에 표시
+            displayMessage(question, 'user');
+            document.getElementById('question').value = ''; // 입력창 초기화
+
+            // 로딩 표시
+            displayLoading();
+
+            // API 호출
+            const response = await fetch(`/ai/v1/ask/?question=${encodeURIComponent(question)}`);
+            const data = await response.json();
+            
+            // AI의 답변 화면에 표시
+            setTimeout(() => {
+                displayMessage(data.answer, 'ai');
+                removeLoading();
+            }, 1000); // 로딩 상태 유지 시간 (1초)
+        }
+
+        function displayMessage(message, role) {
+            const chatBox = document.getElementById('chat-box');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', role);
+            messageDiv.innerText = message;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight; // 스크롤을 맨 아래로
+        }
+
+        function displayLoading() {
+            const chatBox = document.getElementById('chat-box');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.classList.add('loading');
+            loadingDiv.innerText = 'AI가 답변을 준비 중입니다...';
+            chatBox.appendChild(loadingDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function removeLoading() {
+            const loadingDiv = document.querySelector('.loading');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+        }
+    </script>
+</body>
+</html>
