@@ -1,5 +1,5 @@
 # from django.shortcuts import render_to_response, render
-from django.shortcuts import render
+from django.shortcuts import render, HttpResponse
 from django.http import JsonResponse
 from django.template import RequestContext
 from .models import Stock
@@ -11,13 +11,10 @@ def page_not_found_page(request):
     return render(request, '404.html', status=404)
 
 
-def get_data(request):
-    data = {
-        "message": "Hello, this is your data!",
-        "status": "success",
-        "data": [1, 2, 3, 4, 5]
-    }
-    return JsonResponse(data)
+def get_test(request):
+    html = f'''<h1>Hello~</h1>
+    <div>{request.GET.get('str')}</div>'''
+    return HttpResponse(html)
 
 def get_stock_data(request):
     stocks = Stock.objects.all().values("company_name", "ticker_symbol", "market_price", "market_cap")
