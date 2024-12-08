@@ -1,5 +1,5 @@
 """
-URL configuration for study project.
+URL configuration for config project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.1/topics/http/urls/
@@ -16,11 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-# from django.conf.urls import handler400, handler404, handler500
-
-# handler404 = 'myapp.views.page_not_found_page'
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/', include('myapp.urls')),  # myapp의 URL 연결
+    path("admin/", admin.site.urls),
+    path("api/", include("apps.api.urls")),
 ]

@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class Stock(models.Model):
     company_name = models.CharField(max_length=100)  # 회사 이름
     ticker_symbol = models.CharField(max_length=10, unique=True)  # 티커 심볼

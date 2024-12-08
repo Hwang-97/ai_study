@@ -7,7 +7,7 @@ python3 -m venv ./venv
 source venv/bin/activate
 
 #### 필수 패키지 설치
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 
 #### db setting
 init.sh or init.bat 실행
