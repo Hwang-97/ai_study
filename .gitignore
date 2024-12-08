@@ -219,4 +219,5 @@ $RECYCLE.BIN/
 *.lnk
 db.sqlite3
 /log
-# End of https://www.toptal.com/developers/gitignore/api/django,windows,visualstudiocode
+.DS_Store
+apps/ai/models/*

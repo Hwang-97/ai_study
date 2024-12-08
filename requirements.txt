@@ -1,3 +1,7 @@
 django
 djangorestframework
 django-extensions
+torch
+tensorflow
+SentencePiece
+accelerate
