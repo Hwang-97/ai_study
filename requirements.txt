@@ -5,3 +5,4 @@ torch
 tensorflow
 SentencePiece
 accelerate
+transformers
