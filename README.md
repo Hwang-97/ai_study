@@ -20,5 +20,7 @@ http://localhost:3006/api/v1/test/?str=실행확인!!
 
 #### 사용모델
 chat : Bllossom/llama-3.2-Korean-Bllossom-3B
+
 news 분석 : ProsusAI/finbert
+
 거래 판단 : google/flan-t5-base
