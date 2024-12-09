@@ -88,7 +88,7 @@
                 sendMessage();
             }
         });
-        
+
         async function sendMessage() {
             const question = document.getElementById('question').value;
             if (!question) return;
@@ -101,7 +101,7 @@
             displayLoading();
 
             // API 호출
-            const response = await fetch(`/ai/v1/ask/?question=${encodeURIComponent(question)}`);
+            const response = await fetch(`/ai/v1/chat/?question=${encodeURIComponent(question)}`);
             const data = await response.json();
             
             // AI의 답변 화면에 표시
