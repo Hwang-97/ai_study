@@ -6,3 +6,6 @@ tensorflow
 SentencePiece
 accelerate
 transformers
+python-dotenv
+djangorestframework
+newsapi-python

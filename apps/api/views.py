@@ -3,6 +3,7 @@ from django.shortcuts import render, HttpResponse
 from django.http import JsonResponse
 from django.template import RequestContext
 from apps.core.models import Stock
+from .utils import get_news_api
 
 def page_not_found_page(request):
     # response = render_to_response('myapp/404.html', {}, context_instance=RequestContext(request))
@@ -44,3 +45,16 @@ def add_stock(request):
     
 def chat_page(request):
     return render(request, 'chat.html')
+
+def get_news(request):
+    """기업 이름을 받아서 뉴스 기사를 가져옵니다."""
+    company_name = request.GET.get("company_name")
+    
+    if not company_name:
+        return JsonResponse({"error": "기업 이름을 작성해주세요."}, status=400)
+    
+    try:
+        articles = get_news_api(company_name)
+        return JsonResponse({"company_name": company_name, "articles": articles}, status=200)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
