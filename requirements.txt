@@ -9,3 +9,4 @@ transformers
 python-dotenv
 djangorestframework
 newsapi-python
+urllib3==1.26.6
