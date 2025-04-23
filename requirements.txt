@@ -1,2 +1,9 @@
-django
-djangorestframework
+fastapi==0.103.1
+uvicorn==0.24.0
+httpx==0.24.1
+pydantic-settings
+python-dotenv==1.0.0
+websockets==11.0.3
+torch==2.0.1
+pybind11>=2.12
+numpy<2

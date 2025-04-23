@@ -1,0 +1,273 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 토론 시스템</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .message {
+            transition: opacity 0.5s;
+        }
+        .typing::after {
+            content: '|';
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        .persona-1 { background-color: #E3F2FD; }
+        .persona-2 { background-color: #FFF3E0; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl font-bold text-center my-6">AI 토론 시스템</h1>
+        
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">새 토론 시작</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-gray-700 mb-2">주제</label>
+                    <input type="text" id="topic" placeholder="예: 기후 변화" class="w-full p-2 border rounded">
+                </div>
+                <div>
+                    <label class="block text-gray-700 mb-2">대화 턴 수</label>
+                    <input type="number" id="turns" value="3" min="1" max="10" class="w-full p-2 border rounded">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-gray-700 mb-2">페르소나 1</label>
+                    <select id="persona1" class="w-full p-2 border rounded"></select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 mb-2">페르소나 2</label>
+                    <select id="persona2" class="w-full p-2 border rounded"></select>
+                </div>
+            </div>
+                        
+            <div class="flex justify-center mt-4">
+                <button id="start-debate" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded">
+                    토론 시작
+                </button>
+            </div>
+        </div>
+        
+        <div id="debate-container" class="bg-white rounded-lg shadow p-6 mb-6 hidden">
+            <h2 class="text-xl font-semibold mb-4">토론: <span id="debate-topic"></span></h2>
+            
+            <div class="flex justify-between mb-4">
+                <div class="font-medium text-blue-600"><span id="persona1-name"></span></div>
+                <div class="font-medium text-orange-600"><span id="persona2-name"></span></div>
+            </div>
+            
+            <div id="messages-container" class="space-y-4 mb-6 min-h-[300px] max-h-[600px] overflow-y-auto p-2">
+                <!-- 메시지들이 여기에 동적으로 추가됨 -->
+            </div>
+            
+            <div class="flex justify-between mt-4">
+                <button id="copy-debate" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded">
+                    대화 복사
+                </button>
+                <button id="new-debate" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded">
+                    새 토론
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 페르소나 목록 로드
+            const loadPersonas = async () => {
+                try {
+                    const response = await fetch('/api/chat/personas');
+                    const personas = await response.json();
+                    
+                    const persona1Select = document.getElementById('persona1');
+                    const persona2Select = document.getElementById('persona2');
+                    
+                    personas.forEach(persona => {
+                        const option1 = document.createElement('option');
+                        option1.value = persona.id;
+                        option1.textContent = `${persona.name} (${persona.belief.substring(0, 30)}...)`;
+                        persona1Select.appendChild(option1);
+                        
+                        const option2 = document.createElement('option');
+                        option2.value = persona.id;
+                        option2.textContent = `${persona.name} (${persona.belief.substring(0, 30)}...)`;
+                        persona2Select.appendChild(option2);
+                    });
+                    
+                    // 기본값 설정
+                    if (personas.length >= 2) {
+                        persona1Select.value = personas[0].id;
+                        persona2Select.value = personas[1].id;
+                    }
+                    
+                } catch (error) {
+                    console.error('Error loading personas:', error);
+                    alert('페르소나 목록을 불러오는데 실패했습니다.');
+                }
+            };
+            
+            await loadPersonas();
+            
+            // 웹소켓 연결 및 대화 처리
+            let socket = null;
+            
+            document.getElementById('start-debate').addEventListener('click', () => {
+                const topic = document.getElementById('topic').value.trim();
+                if (!topic) {
+                    alert('토론 주제를 입력해주세요.');
+                    return;
+                }
+                
+                const persona1Id = document.getElementById('persona1').value;
+                const persona2Id = document.getElementById('persona2').value;
+                const turns = parseInt(document.getElementById('turns').value);
+                
+                if (persona1Id === persona2Id) {
+                    alert('서로 다른 페르소나를 선택해주세요.');
+                    return;
+                }
+                
+                startDebate(topic, persona1Id, persona2Id, turns);
+            });
+            
+            const startDebate = (topic, persona1Id, persona2Id, turns) => {
+                // UI 초기화
+                const messagesContainer = document.getElementById('messages-container');
+                messagesContainer.innerHTML = '';
+                
+                document.getElementById('debate-topic').textContent = topic;
+                document.getElementById('persona1-name').textContent = document.getElementById('persona1').selectedOptions[0].textContent.split(' (')[0];
+                document.getElementById('persona2-name').textContent = document.getElementById('persona2').selectedOptions[0].textContent.split(' (')[0];
+                
+                document.getElementById('debate-container').classList.remove('hidden');
+                
+                // 기존 웹소켓 연결 종료
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.close();
+                }
+                
+                // 새 웹소켓 연결
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                socket = new WebSocket(`${protocol}//${window.location.host}/api/chat/ws`);
+                
+                let currentMessageElement = null;
+                let currentSpeaker = null;
+                
+                socket.onopen = () => {
+                    // 대화 요청 전송
+                    socket.send(JSON.stringify({
+                        topic: topic,
+                        persona1_id: persona1Id,
+                        persona2_id: persona2Id,
+                        turns: turns
+                    }));
+                };
+                
+                socket.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    
+                    switch (data.event) {
+                        case 'dialogue_start':
+                            console.log('Dialogue started:', data.data);
+                            break;
+                            
+                        case 'message_start':
+                            const speakerName = data.data.speaker;
+                            currentSpeaker = speakerName;
+                            
+                            // 새 메시지 요소 생성
+                            const messageDiv = document.createElement('div');
+                            messageDiv.className = `message p-3 rounded-lg ${speakerName === document.getElementById('persona1-name').textContent ? 'persona-1' : 'persona-2'}`;
+                            
+                            const speakerDiv = document.createElement('div');
+                            speakerDiv.className = 'font-bold mb-1';
+                            speakerDiv.textContent = speakerName;
+                            
+                            const contentDiv = document.createElement('div');
+                            contentDiv.className = 'message-content typing';
+                            contentDiv.textContent = '';
+                            
+                            messageDiv.appendChild(speakerDiv);
+                            messageDiv.appendChild(contentDiv);
+                            messagesContainer.appendChild(messageDiv);
+                            
+                            currentMessageElement = contentDiv;
+                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                            break;
+                            
+                        case 'message_chunk':
+                            if (currentMessageElement && data.data.speaker === currentSpeaker) {
+                                currentMessageElement.textContent += data.data.chunk;
+                                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                            }
+                            break;
+                            
+                        case 'message_complete':
+                            if (currentMessageElement && data.data.speaker === currentSpeaker) {
+                                currentMessageElement.classList.remove('typing');
+                                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                            }
+                            break;
+                            
+                        case 'dialogue_complete':
+                            console.log('Dialogue completed for topic:', data.data.topic);
+                            break;
+                            
+                        case 'error':
+                            console.error('Error:', data.data.message);
+                            alert(`오류 발생: ${data.data.message}`);
+                            break;
+                    }
+                };
+                
+                socket.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    alert('웹소켓 연결 중 오류가 발생했습니다.');
+                };
+                
+                socket.onclose = () => {
+                    console.log('WebSocket connection closed');
+                };
+            };
+            
+            // 대화 복사 기능
+            document.getElementById('copy-debate').addEventListener('click', () => {
+                const messagesContainer = document.getElementById('messages-container');
+                const topic = document.getElementById('debate-topic').textContent;
+                
+                let textToCopy = `주제: ${topic}\n\n`;
+                const messageElements = messagesContainer.querySelectorAll('.message');
+                
+                messageElements.forEach(messageEl => {
+                    const speaker = messageEl.querySelector('.font-bold').textContent;
+                    const content = messageEl.querySelector('.message-content').textContent;
+                    textToCopy += `${speaker}: ${content}\n\n`;
+                });
+                
+                navigator.clipboard.writeText(textToCopy)
+                    .then(() => alert('대화 내용이 클립보드에 복사되었습니다.'))
+                    .catch(err => console.error('복사 실패:', err));
+            });
+            
+            // 새 토론 버튼
+            document.getElementById('new-debate').addEventListener('click', () => {
+                document.getElementById('debate-container').classList.add('hidden');
+                
+                // 웹소켓 연결 종료
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.close();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
